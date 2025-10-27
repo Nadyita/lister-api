@@ -1,0 +1,630 @@
+openapi: 3.0.3
+info:
+  title: Ultimate Lister API (Rust)
+  description: |
+    RESTful Shopping and wishlist management API.
+    
+    This is the improved Rust version with proper REST conventions.
+    No authentication required.
+  version: 1.0.0
+  contact:
+    name: Jens Reidel
+servers:
+  - url: http://localhost:8080/api
+    description: Local development server
+
+tags:
+  - name: Lists
+    description: Shopping and wishlist management
+  - name: Items
+    description: Item management within lists
+  - name: Categories
+    description: Category management
+  - name: Search
+    description: Search and autocomplete functionality
+
+paths:
+  /lists:
+    get:
+      summary: Get all lists
+      description: Returns all lists with item counts
+      tags:
+        - Lists
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ListWithCount'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      summary: Create a new list
+      description: Creates a new shopping or wishlist
+      tags:
+        - Lists
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateListRequest'
+      responses:
+        '201':
+          description: List created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/List'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /lists/{id}:
+    parameters:
+      - $ref: '#/components/parameters/ListId'
+
+    get:
+      summary: Get a list
+      description: Returns a single list by ID
+      tags:
+        - Lists
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/List'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      summary: Update a list
+      description: Updates list name (rename)
+      tags:
+        - Lists
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateListRequest'
+      responses:
+        '200':
+          description: List updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/List'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      summary: Delete a list
+      description: Deletes a list and all its items (cascade)
+      tags:
+        - Lists
+      responses:
+        '204':
+          description: List deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /lists/{list_id}/items:
+    parameters:
+      - name: list_id
+        in: path
+        required: true
+        description: ID of the list
+        schema:
+          type: integer
+
+    get:
+      summary: Get all items in a list
+      description: Returns all items for a specific list
+      tags:
+        - Items
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Item'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      summary: Create a new item
+      description: Creates a new item in a list
+      tags:
+        - Items
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateItemRequest'
+      responses:
+        '201':
+          description: Item created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /items/{id}:
+    parameters:
+      - $ref: '#/components/parameters/ItemId'
+
+    get:
+      summary: Get an item
+      description: Returns a single item by ID
+      tags:
+        - Items
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      summary: Update an item
+      description: Updates an existing item. All fields are optional.
+      tags:
+        - Items
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateItemRequest'
+      responses:
+        '200':
+          description: Item updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      summary: Delete an item
+      description: Deletes an item
+      tags:
+        - Items
+      responses:
+        '204':
+          description: Item deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /items/{id}/toggle:
+    parameters:
+      - $ref: '#/components/parameters/ItemId'
+
+    patch:
+      summary: Toggle item cart status
+      description: Toggles the inCart status of an item (for marking items as done while shopping)
+      tags:
+        - Items
+      responses:
+        '200':
+          description: Item toggled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /categories:
+    get:
+      summary: Get all categories
+      description: Returns all categories sorted by name
+      tags:
+        - Categories
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      summary: Create a new category
+      description: Creates a new category
+      tags:
+        - Categories
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCategoryRequest'
+      responses:
+        '201':
+          description: Category created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /categories/{id}:
+    parameters:
+      - $ref: '#/components/parameters/CategoryId'
+
+    get:
+      summary: Get a category
+      description: Returns a single category by ID
+      tags:
+        - Categories
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      summary: Update a category
+      description: Updates category name
+      tags:
+        - Categories
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCategoryRequest'
+      responses:
+        '200':
+          description: Category updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      summary: Delete a category
+      description: Deletes a category
+      tags:
+        - Categories
+      responses:
+        '204':
+          description: Category deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /search:
+    get:
+      summary: Search item names
+      description: Returns all known item names for autocomplete functionality, sorted by usage count
+      tags:
+        - Search
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example: ["Milch", "Butter", "Käse", "Brot"]
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /search/category-mappings:
+    get:
+      summary: Get category mappings
+      description: Returns a mapping of product names to their categories
+      tags:
+        - Search
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+                  nullable: true
+                example:
+                  "Milch": "Kühlregal"
+                  "Brot": "Backsachen"
+                  "Tomaten": "Obst und Gemüse"
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  parameters:
+    ListId:
+      name: id
+      in: path
+      required: true
+      description: ID of the list
+      schema:
+        type: integer
+
+    ItemId:
+      name: id
+      in: path
+      required: true
+      description: ID of the item
+      schema:
+        type: integer
+
+    CategoryId:
+      name: id
+      in: path
+      required: true
+      description: ID of the category
+      schema:
+        type: integer
+
+  schemas:
+    List:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for the list
+          example: 1
+        name:
+          type: string
+          description: Name of the list
+          example: "Supermarkt"
+
+    ListWithCount:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for the list
+          example: 1
+        name:
+          type: string
+          description: Name of the list
+          example: "Supermarkt"
+        count:
+          type: integer
+          nullable: true
+          description: Number of items in this list
+          example: 5
+
+    CreateListRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Name of the new list
+          example: "Wochenend-Einkauf"
+
+    UpdateListRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: New name for the list
+          example: "Wochenend-Einkauf"
+
+    Item:
+      type: object
+      required:
+        - id
+        - name
+        - inCart
+        - list
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for the item
+          example: 123
+        name:
+          type: string
+          description: Name of the item
+          example: "Milch"
+        amount:
+          type: number
+          nullable: true
+          description: Amount/quantity
+          example: 2
+        amountUnit:
+          type: string
+          nullable: true
+          description: Unit of measurement
+          example: "l"
+        inCart:
+          type: boolean
+          description: Whether the item is marked as in cart (done)
+          example: false
+        list:
+          type: integer
+          description: ID of the list this item belongs to
+          example: 1
+        category:
+          type: string
+          nullable: true
+          description: Category name
+          example: "Kühlregal"
+
+    CreateItemRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Name of the item
+          example: "Milch"
+        amount:
+          type: number
+          nullable: true
+          description: Amount/quantity (optional)
+          example: 2
+        amountUnit:
+          type: string
+          nullable: true
+          description: Unit of measurement (optional)
+          example: "l"
+        category:
+          type: string
+          nullable: true
+          description: Category name (optional)
+          example: "Kühlregal"
+
+    UpdateItemRequest:
+      type: object
+      description: All fields are optional. Only provided fields will be updated.
+      properties:
+        name:
+          type: string
+          nullable: true
+          description: New name of the item
+          example: "Vollmilch"
+        amount:
+          type: number
+          nullable: true
+          description: Amount/quantity
+          example: 3
+        amountUnit:
+          type: string
+          nullable: true
+          description: Unit of measurement
+          example: "l"
+        category:
+          type: string
+          nullable: true
+          description: Category name
+          example: "Kühlregal"
+
+    Category:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for the category
+          example: 7
+        name:
+          type: string
+          description: Name of the category
+          example: "Kühlregal"
+
+    CreateCategoryRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Name of the new category
+          example: "Getränke"
+
+    UpdateCategoryRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: New name for the category
+          example: "Getränke"
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "Resource not found"
+
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Resource not found"
+
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Category already exists"
+
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Database error"
+
