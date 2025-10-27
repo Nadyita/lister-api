@@ -1,5 +1,5 @@
 # Build stage - using Rust with musl support
-FROM rust:1.91-alpine AS builder
+FROM rust:1.90-alpine AS builder
 
 # Install musl development tools
 RUN apk add --no-cache musl-dev
