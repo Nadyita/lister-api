@@ -30,7 +30,11 @@ FROM scratch
 # Copy the statically linked binary from builder
 COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/ultimatelister-api /ultimatelister-api
 
-# Expose the port (adjust if needed based on your config)
+# Set default environment variables for container deployment
+ENV HOST=0.0.0.0
+ENV PORT=8080
+
+# Expose the port
 EXPOSE 8080
 
 # Set the entrypoint
