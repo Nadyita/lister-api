@@ -172,19 +172,59 @@ pub async fn delete_category(
     State(state): State<AppState>,
     Path(id): Path<i32>,
 ) -> Result<StatusCode> {
-    let result = sqlx::query(
+    // Start transaction
+    let mut tx = state.pool.begin().await?;
+
+    // Get the category to know its name
+    let category = sqlx::query_as::<_, Category>(
+        r#"
+        SELECT id, name
+        FROM categories
+        WHERE id = $1
+        "#,
+    )
+    .bind(id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or(AppError::NotFound)?;
+
+    // Set category to NULL for all items that reference this category
+    sqlx::query(
+        r#"
+        UPDATE items
+        SET category = NULL
+        WHERE category = $1
+        "#,
+    )
+    .bind(&category.name)
+    .execute(&mut *tx)
+    .await?;
+
+    // Set category to NULL for all names that reference this category
+    sqlx::query(
+        r#"
+        UPDATE names
+        SET category = NULL
+        WHERE category = $1
+        "#,
+    )
+    .bind(&category.name)
+    .execute(&mut *tx)
+    .await?;
+
+    // Delete the category
+    sqlx::query(
         r#"
         DELETE FROM categories
         WHERE id = $1
         "#,
     )
     .bind(id)
-    .execute(&state.pool)
+    .execute(&mut *tx)
     .await?;
 
-    if result.rows_affected() == 0 {
-        return Err(AppError::NotFound);
-    }
+    // Commit transaction
+    tx.commit().await?;
 
     Ok(StatusCode::NO_CONTENT)
 }
