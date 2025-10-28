@@ -150,8 +150,23 @@ pub async fn update_item(
     .await?
     .ok_or(AppError::NotFound)?;
 
+    // Determine new values using Option<Option<T>>:
+    // - None = field not in request, keep current value
+    // - Some(None) = field is explicitly null, set to NULL
+    // - Some(Some(value)) = field has a value, use it
     let new_name = payload.name.as_ref().unwrap_or(&current_item.name);
-    let new_category = payload.category.or(current_item.category);
+    let new_amount = match payload.amount {
+        Some(inner) => inner,           // Field present: use it (even if None)
+        None => current_item.amount,    // Field missing: keep current
+    };
+    let new_amount_unit = match payload.amount_unit {
+        Some(inner) => inner,
+        None => current_item.amount_unit.clone(),
+    };
+    let new_category = match payload.category {
+        Some(inner) => inner,
+        None => current_item.category.clone(),
+    };
 
     // Insert category if provided and doesn't exist
     if let Some(ref category) = new_category {
@@ -184,18 +199,18 @@ pub async fn update_item(
     let item = sqlx::query_as::<_, Item>(
         r#"
         UPDATE items
-        SET name = COALESCE($1, name),
-            amount = COALESCE($2, amount),
-            "amountUnit" = COALESCE($3, "amountUnit"),
+        SET name = $1,
+            amount = $2,
+            "amountUnit" = $3,
             category = $4
         WHERE id = $5
         RETURNING id, name, amount, "amountUnit", "inCart", list, category
         "#,
     )
-    .bind(&payload.name)
-    .bind(payload.amount.or(current_item.amount))
-    .bind(&payload.amount_unit)
-    .bind(new_category)
+    .bind(new_name)
+    .bind(&new_amount)
+    .bind(&new_amount_unit)
+    .bind(&new_category)
     .bind(id)
     .fetch_one(&mut *tx)
     .await?;

@@ -30,9 +30,21 @@ pub struct CreateItemRequest {
 #[derive(Debug, Deserialize)]
 pub struct UpdateItemRequest {
     pub name: Option<String>,
-    pub amount: Option<Decimal>,
+    #[serde(default, deserialize_with = "deserialize_some")]
+    pub amount: Option<Option<Decimal>>,
     #[serde(rename = "amountUnit")]
-    pub amount_unit: Option<String>,
-    pub category: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_some")]
+    pub amount_unit: Option<Option<String>>,
+    #[serde(default, deserialize_with = "deserialize_some")]
+    pub category: Option<Option<String>>,
+}
+
+// Helper function to distinguish between missing field and explicit null
+fn deserialize_some<'de, T, D>(deserializer: D) -> Result<Option<Option<T>>, D::Error>
+where
+    T: Deserialize<'de>,
+    D: serde::Deserializer<'de>,
+{
+    Deserialize::deserialize(deserializer).map(Some)
 }
 
