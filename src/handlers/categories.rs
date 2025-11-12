@@ -8,6 +8,7 @@ use crate::{
     error::{AppError, Result},
     models::Category,
     state::AppState,
+    validation,
 };
 
 #[derive(serde::Deserialize)]
@@ -60,6 +61,9 @@ pub async fn create_category(
     State(state): State<AppState>,
     Json(payload): Json<CreateCategoryRequest>,
 ) -> Result<(StatusCode, Json<Category>)> {
+    // Validate input
+    validation::validate_string(&payload.name, "Category name")?;
+
     let category = sqlx::query_as::<_, Category>(
         r#"
         INSERT INTO categories (name)
@@ -88,6 +92,9 @@ pub async fn update_category(
     Path(id): Path<i32>,
     Json(payload): Json<UpdateCategoryRequest>,
 ) -> Result<Json<Category>> {
+    // Validate input
+    validation::validate_string(&payload.name, "Category name")?;
+
     // Start transaction
     let mut tx = state.pool.begin().await?;
 

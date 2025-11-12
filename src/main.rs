@@ -9,6 +9,7 @@ mod handlers;
 mod models;
 mod routes;
 mod state;
+mod validation;
 
 use config::Config;
 use state::AppState;

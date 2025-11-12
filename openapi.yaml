@@ -20,6 +20,8 @@ tags:
     description: Item management within lists
   - name: Categories
     description: Category management
+  - name: Names
+    description: Name and category mapping management
   - name: Search
     description: Search and autocomplete functionality
 
@@ -343,6 +345,81 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /names:
+    get:
+      summary: Get all names
+      description: Returns all known item names with their usage count and category mappings
+      tags:
+        - Names
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Name'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /names/{id}:
+    parameters:
+      - $ref: '#/components/parameters/NameId'
+
+    get:
+      summary: Get a name entry
+      description: Returns a single name entry by ID
+      tags:
+        - Names
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Name'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      summary: Update a name entry
+      description: Updates a name entry (rename and/or change category mapping)
+      tags:
+        - Names
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNameRequest'
+      responses:
+        '200':
+          description: Name entry updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Name'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      summary: Delete a name entry
+      description: Deletes a name entry from the autocomplete database
+      tags:
+        - Names
+      responses:
+        '204':
+          description: Name entry deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /search:
     get:
       summary: Search item names
@@ -408,6 +485,14 @@ components:
       in: path
       required: true
       description: ID of the category
+      schema:
+        type: integer
+
+    NameId:
+      name: id
+      in: path
+      required: true
+      description: ID of the name entry
       schema:
         type: integer
 
@@ -591,6 +676,45 @@ components:
           type: string
           description: New name for the category
           example: "Getränke"
+
+    Name:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for the name entry
+          example: 42
+        name:
+          type: string
+          description: Item name
+          example: "Milch"
+        count:
+          type: integer
+          nullable: true
+          description: Usage count (how often this item was added)
+          example: 15
+        category:
+          type: string
+          nullable: true
+          description: Associated category name
+          example: "Kühlregal"
+
+    UpdateNameRequest:
+      type: object
+      description: All fields are optional. Only provided fields will be updated.
+      properties:
+        name:
+          type: string
+          description: New name for the item
+          example: "Vollmilch"
+        category:
+          type: string
+          nullable: true
+          description: Associated category name
+          example: "Kühlregal"
 
     Error:
       type: object

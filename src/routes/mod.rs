@@ -28,6 +28,11 @@ pub fn create_router(state: AppState) -> Router {
         .route("/categories/:id", get(handlers::get_category))
         .route("/categories/:id", put(handlers::update_category))
         .route("/categories/:id", delete(handlers::delete_category))
+        // Names routes
+        .route("/names", get(handlers::get_all_names))
+        .route("/names/:id", get(handlers::get_name))
+        .route("/names/:id", put(handlers::update_name))
+        .route("/names/:id", delete(handlers::delete_name))
         // Search routes
         .route("/search", get(handlers::search_names))
         .route(

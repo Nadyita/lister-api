@@ -8,6 +8,7 @@ use crate::{
     error::{AppError, Result},
     models::{CreateListRequest, List, ListWithCount, UpdateListRequest},
     state::AppState,
+    validation,
 };
 
 /// GET /api/lists - Get all lists with item counts
@@ -47,6 +48,9 @@ pub async fn create_list(
     State(state): State<AppState>,
     Json(payload): Json<CreateListRequest>,
 ) -> Result<(StatusCode, Json<List>)> {
+    // Validate input
+    validation::validate_string(&payload.name, "List name")?;
+
     let list = sqlx::query_as::<_, List>(
         r#"
         INSERT INTO lists (name)
@@ -67,6 +71,9 @@ pub async fn update_list(
     Path(id): Path<i32>,
     Json(payload): Json<UpdateListRequest>,
 ) -> Result<Json<List>> {
+    // Validate input
+    validation::validate_string(&payload.name, "List name")?;
+
     let list = sqlx::query_as::<_, List>(
         r#"
         UPDATE lists

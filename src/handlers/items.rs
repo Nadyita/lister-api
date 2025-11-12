@@ -8,6 +8,7 @@ use crate::{
     error::{AppError, Result},
     models::{CreateItemRequest, Item, UpdateItemRequest},
     state::AppState,
+    validation,
 };
 
 /// GET /api/lists/:list_id/items - Get all items in a list
@@ -53,6 +54,11 @@ pub async fn create_item(
     Path(list_id): Path<i32>,
     Json(payload): Json<CreateItemRequest>,
 ) -> Result<(StatusCode, Json<Item>)> {
+    // Validate input
+    validation::validate_string(&payload.name, "Item name")?;
+    validation::validate_optional_string(&payload.amount_unit, "Amount unit")?;
+    validation::validate_optional_string(&payload.category, "Category")?;
+
     // Start transaction
     let mut tx = state.pool.begin().await?;
 
@@ -134,6 +140,17 @@ pub async fn update_item(
     Path(id): Path<i32>,
     Json(payload): Json<UpdateItemRequest>,
 ) -> Result<Json<Item>> {
+    // Validate input
+    if let Some(ref name) = payload.name {
+        validation::validate_string(name, "Item name")?;
+    }
+    if let Some(Some(ref unit)) = payload.amount_unit {
+        validation::validate_string(unit, "Amount unit")?;
+    }
+    if let Some(Some(ref cat)) = payload.category {
+        validation::validate_string(cat, "Category")?;
+    }
+
     // Start transaction
     let mut tx = state.pool.begin().await?;
 
